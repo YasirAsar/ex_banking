@@ -1,0 +1,19 @@
+version: "3.4"
+
+services:
+    backend:
+        container_name: ex_banking_backend
+        build:
+            context: .
+            dockerfile: ./Dockerfile
+        stdin_open: true
+        tty: true
+        volumes:
+            - .:/home/elixir/backend
+            - $HOME/.Xauthority:$HOME/.Xauthority:rw
+            - /tmp/.X11-unix:/tmp/.X11-unix
+        # command: iex -S mix phx.server
+        ports:
+            - "4000:4000"
+        environment:
+            - DISPLAY=$DISPLAY
