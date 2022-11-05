@@ -7,8 +7,8 @@ defmodule ExBanking.Banking.BalanceAgent do
 
   alias ExBanking.Banking.BalanceState
 
-  def start_link(_opts) do
-    Agent.start_link(fn -> [] end)
+  def start_link(user) do
+    Agent.start_link(fn -> [] end, name: via_tuple(user))
   end
 
   def get_balance(user, currency) do
@@ -20,30 +20,38 @@ defmodule ExBanking.Banking.BalanceAgent do
   end
 
   def deposit(user, amount, currency) do
-    Agent.update(user, fn state ->
+    Agent.get_and_update(user, fn state ->
       state
       |> Enum.split_with(&(&1.currency == currency))
       |> case do
         {[], _} ->
           amount = set_precision(amount)
+          balance = %BalanceState{currency: currency, amount: amount}
 
-          [%BalanceState{currency: currency, amount: amount} | state]
+          {{:ok, balance.amount}, [balance | state]}
 
         {[object], remaining_state} ->
           amount = set_precision(object.amount + amount)
+          balance = %{object | amount: amount}
 
-          [%{object | amount: amount} | remaining_state]
+          {{:ok, balance.amount}, [balance | remaining_state]}
       end
     end)
   end
 
   def withdraw(user, amount, currency) do
-    Agent.update(user, fn state ->
+    Agent.get_and_update(user, fn state ->
       {[object], remaining_state} = Enum.split_with(state, &(&1.currency == currency))
       amount = set_precision(object.amount - amount)
-      [%{object | amount: amount} | remaining_state]
+      balance = %{object | amount: amount}
+      state = [balance | remaining_state]
+
+      {{:ok, balance.amount}, state}
     end)
   end
 
+  defp set_precision(amount) when is_integer(amount), do: amount
   defp set_precision(amount), do: Float.round(amount, 2)
+
+  defp via_tuple(user), do: {:via, Registry, {ExBanking.Registry, user}}
 end

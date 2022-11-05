@@ -2,7 +2,7 @@ defmodule ExBanking.Accounts.UserRegistry do
   def create_user(user) do
     DynamicSupervisor.start_child(
       ExBanking.UserSupervisor,
-      {ExBanking.Banking.BalanceAgent, {:via, Registry, {ExBanking.Registry, user}}}
+      {ExBanking.Banking.BalanceAgent, user}
     )
   end
 

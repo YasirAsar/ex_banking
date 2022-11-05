@@ -7,18 +7,20 @@ defmodule ExBanking.Banking.Balance do
 
   def withdraw(user, amount, currency) do
     with true <- can_withdraw_amount(user, amount, currency) do
-      withdraw(user, amount, currency)
+      BalanceAgent.withdraw(user, amount, currency)
     end
   end
 
   def send(from_user, to_user, amount, currency) do
-    with :ok <- withdraw(from_user, amount, currency) do
-      deposit(to_user, amount, currency)
+    with {:ok, from_user_balance} <- withdraw(from_user, amount, currency),
+         {:ok, to_user_balance} <- deposit(to_user, amount, currency) do
+      {:ok, from_user_balance, to_user_balance}
     end
   end
 
   defp can_withdraw_amount(user, amount, currency) do
-    with false <- get_balance(user, currency) >= amount do
+    with {:ok, balance} <- get_balance(user, currency),
+         false <- balance >= amount do
       {:error, :not_enough_money}
     end
   end
