@@ -5,6 +5,8 @@ RUN addgroup --gecos 1000 elixir \
 
 RUN apt-get update && apt-get install telnet
 
+RUN mix local.hex --force && mix local.rebar --force
+
 USER elixir
 
 WORKDIR /home/elixir/backend

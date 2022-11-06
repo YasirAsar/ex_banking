@@ -1,13 +1,13 @@
 defmodule ExBanking.Accounts.UserRegistry do
   def create_user(user) do
     DynamicSupervisor.start_child(
-      ExBanking.UserSupervisor,
+      ExBanking.Accounts.UserSupervisor,
       {ExBanking.Banking.BalanceAgent, user}
     )
   end
 
   def lookup_user(user, type \\ nil) do
-    case Registry.lookup(ExBanking.Registry, user) do
+    case Registry.lookup(__MODULE__, user) do
       [{pid, _value}] -> {:ok, pid}
       _ -> {:error, lookup_user_error(type)}
     end

@@ -5,13 +5,17 @@ defmodule ExBanking.Banking.BalanceAgent do
   """
   use Agent, restart: :temporary
 
+  alias ExBanking.Accounts.UserRequestManager
   alias ExBanking.Banking.BalanceState
 
   def start_link(user) do
+    UserRequestManager.initialize_user_request_counter(user)
     Agent.start_link(fn -> [] end, name: via_tuple(user))
   end
 
   def get_balance(user, currency) do
+    Process.sleep(2000)
+
     Agent.get(user, fn state ->
       Enum.find_value(state, 0.0, fn object ->
         if object.currency == currency, do: object.amount
@@ -53,5 +57,5 @@ defmodule ExBanking.Banking.BalanceAgent do
   defp set_precision(amount) when is_integer(amount), do: amount
   defp set_precision(amount), do: Float.round(amount, 2)
 
-  defp via_tuple(user), do: {:via, Registry, {ExBanking.Registry, user}}
+  defp via_tuple(user), do: {:via, Registry, {ExBanking.Accounts.UserRegistry, user}}
 end

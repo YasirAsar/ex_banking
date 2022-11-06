@@ -1,6 +1,7 @@
 defmodule ExBanking do
   alias ExBanking.ArgumentValidator
   alias ExBanking.Accounts.UserRegistry
+  alias ExBanking.Accounts.UserRequestManager
   alias ExBanking.Banking.Balance
 
   @spec create_user(user :: String.t()) :: :ok | {:error, :wrong_arguments | :user_already_exists}
@@ -16,9 +17,11 @@ defmodule ExBanking do
           {:ok, new_balance :: number}
           | {:error, :wrong_arguments | :user_does_not_exist | :too_many_requests_to_user}
   def deposit(user, amount, currency) do
-    with true <- ArgumentValidator.validate_deposit_args(user, amount, currency) do
-      UserRegistry.lookup_user(user, amount, currency, &Balance.deposit/3)
-    end
+    UserRequestManager.manage_request(user, fn ->
+      with true <- ArgumentValidator.validate_deposit_args(user, amount, currency) do
+        UserRegistry.lookup_user(user, amount, currency, &Balance.deposit/3)
+      end
+    end)
   end
 
   @spec withdraw(user :: String.t(), amount :: number, currency :: String.t()) ::
@@ -39,10 +42,12 @@ defmodule ExBanking do
           {:ok, balance :: number}
           | {:error, :wrong_arguments | :user_does_not_exist | :too_many_requests_to_user}
   def get_balance(user, currency) do
-    with true <- ArgumentValidator.validate_get_balance(user, currency),
-         {:ok, pid} <- UserRegistry.lookup_user(user) do
-      Balance.get_balance(pid, currency)
-    end
+    UserRequestManager.manage_request(user, fn ->
+      with true <- ArgumentValidator.validate_get_balance(user, currency),
+           {:ok, pid} <- UserRegistry.lookup_user(user) do
+        Balance.get_balance(pid, currency)
+      end
+    end)
   end
 
   @spec send(
