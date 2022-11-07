@@ -18,7 +18,7 @@ defmodule ExBanking.Banking.Balance do
     end
   end
 
-  defp can_withdraw_amount(user, amount, currency) do
+  def can_withdraw_amount(user, amount, currency) do
     with {:ok, balance} <- get_balance(user, currency),
          false <- balance >= amount do
       {:error, :not_enough_money}

@@ -6,6 +6,10 @@ defmodule ExBanking.Accounts.UserRegistry do
     )
   end
 
+  def delete_user(pid) do
+    DynamicSupervisor.terminate_child(ExBanking.Accounts.UserSupervisor, pid)
+  end
+
   def lookup_user(user, type \\ nil) do
     case Registry.lookup(__MODULE__, user) do
       [{pid, _value}] -> {:ok, pid}
@@ -13,9 +17,8 @@ defmodule ExBanking.Accounts.UserRegistry do
     end
   end
 
-  def check_user_existence(user) do
-    with {:ok, _pid} <- lookup_user(user), do: {:error, :user_already_exists}
-  end
+  def check_user_existence(user),
+    do: with({:ok, _pid} <- lookup_user(user), do: {:error, :user_already_exists})
 
   def lookup_user_error(type)
   def lookup_user_error(:sender), do: :sender_does_not_exist

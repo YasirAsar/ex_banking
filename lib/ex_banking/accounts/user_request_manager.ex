@@ -2,7 +2,7 @@ defmodule ExBanking.Accounts.UserRequestManager do
   alias ExBanking.Accounts.UserRequestCounter
   alias ExBanking.Accounts.UserRegistry
 
-  @maximum_user_request 10
+  @maximum_allowed_request Application.compile_env!(:ex_banking, :maximum_allowed_request)
 
   def manage_request(user, fun) do
     with true <- restrict_user_request(user) do
@@ -39,7 +39,7 @@ defmodule ExBanking.Accounts.UserRequestManager do
     with {:ok, sender_pid} <- UserRegistry.lookup_user(from_user, :sender),
          {:ok, receiver_pid} <- UserRegistry.lookup_user(to_user, :receiver),
          true <- restrict_user_request(from_user, :sender),
-         true <- restrict_user_request(from_user, :receiver) do
+         true <- restrict_user_request(to_user, :receiver) do
       UserRequestCounter.check_out(from_user)
       UserRequestCounter.check_out(to_user)
 
@@ -55,14 +55,14 @@ defmodule ExBanking.Accounts.UserRequestManager do
     end
   end
 
-  def restrict_user_request(user, type \\ nil) do
+  defp restrict_user_request(user, type \\ nil) do
     user
     |> UserRequestCounter.get_user_request_count()
     |> restrict_user_request_count(type)
   end
 
   defp restrict_user_request_count(count, type) do
-    with false <- count < @maximum_user_request do
+    with false <- count < @maximum_allowed_request do
       {:error, user_request_count_error(type)}
     end
   end
