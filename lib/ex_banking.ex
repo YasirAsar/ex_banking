@@ -17,11 +17,7 @@ defmodule ExBanking do
           {:ok, new_balance :: number}
           | {:error, :wrong_arguments | :user_does_not_exist | :too_many_requests_to_user}
   def deposit(user, amount, currency) do
-    UserRequestManager.manage_request(user, fn ->
-      with true <- ArgumentValidator.validate_deposit_args(user, amount, currency) do
-        UserRegistry.lookup_user(user, amount, currency, &Balance.deposit/3)
-      end
-    end)
+    UserRequestManager.manage_request(user, amount, currency, &Balance.deposit/3)
   end
 
   @spec withdraw(user :: String.t(), amount :: number, currency :: String.t()) ::
@@ -34,7 +30,7 @@ defmodule ExBanking do
 
   def withdraw(user, amount, currency) do
     with true <- ArgumentValidator.validate_withdraw_args(user, amount, currency) do
-      UserRegistry.lookup_user(user, amount, currency, &Balance.withdraw/3)
+      UserRequestManager.manage_request(user, amount, currency, &Balance.withdraw/3)
     end
   end
 
@@ -42,12 +38,9 @@ defmodule ExBanking do
           {:ok, balance :: number}
           | {:error, :wrong_arguments | :user_does_not_exist | :too_many_requests_to_user}
   def get_balance(user, currency) do
-    UserRequestManager.manage_request(user, fn ->
-      with true <- ArgumentValidator.validate_get_balance(user, currency),
-           {:ok, pid} <- UserRegistry.lookup_user(user) do
-        Balance.get_balance(pid, currency)
-      end
-    end)
+    with true <- ArgumentValidator.validate_get_balance(user, currency) do
+      UserRequestManager.manage_request(user, currency, &Balance.get_balance/2)
+    end
   end
 
   @spec send(
@@ -65,10 +58,8 @@ defmodule ExBanking do
              | :too_many_requests_to_sender
              | :too_many_requests_to_receiver}
   def send(from_user, to_user, amount, currency) do
-    with true <- ArgumentValidator.validate_send(from_user, to_user, amount, currency),
-         {:ok, sender_pid} <- UserRegistry.lookup_user(from_user, :sender),
-         {:ok, receiver_pid} <- UserRegistry.lookup_user(to_user, :receiver) do
-      Balance.send(sender_pid, receiver_pid, amount, currency)
+    with true <- ArgumentValidator.validate_send(from_user, to_user, amount, currency) do
+      UserRequestManager.manage_request(from_user, to_user, amount, currency, &Balance.send/4)
     end
   end
 end

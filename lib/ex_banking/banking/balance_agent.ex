@@ -5,17 +5,15 @@ defmodule ExBanking.Banking.BalanceAgent do
   """
   use Agent, restart: :temporary
 
-  alias ExBanking.Accounts.UserRequestManager
+  alias ExBanking.Accounts.UserRequestCounter
   alias ExBanking.Banking.BalanceState
 
   def start_link(user) do
-    UserRequestManager.initialize_user_request_counter(user)
+    UserRequestCounter.initialize_user_request_counter(user)
     Agent.start_link(fn -> [] end, name: via_tuple(user))
   end
 
   def get_balance(user, currency) do
-    Process.sleep(2000)
-
     Agent.get(user, fn state ->
       Enum.find_value(state, 0.0, fn object ->
         if object.currency == currency, do: object.amount

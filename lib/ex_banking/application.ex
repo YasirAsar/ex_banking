@@ -7,8 +7,12 @@ defmodule ExBanking.Application do
 
   @impl true
   def start(_type, _args) do
-    # Although we don't use the supervisor name below directly,
-    # it can be useful when debugging or introspecting the system.
-    ExBanking.Supervisor.start_link(name: ExBanking.Supervisor)
+    children = [
+      {Registry, keys: :unique, name: ExBanking.Accounts.UserRegistry},
+      {DynamicSupervisor, name: ExBanking.Accounts.UserSupervisor, strategy: :one_for_one}
+    ]
+
+    opts = [strategy: :rest_for_one, name: ExBanking.Supervisor]
+    Supervisor.start_link(children, opts)
   end
 end

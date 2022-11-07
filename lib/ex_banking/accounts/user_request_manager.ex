@@ -1,16 +1,12 @@
 defmodule ExBanking.Accounts.UserRequestManager do
-  def initialize_user_request_counter(user) do
-    create_user_request_manager_table()
-    insert_user(user)
-  end
+  alias ExBanking.Accounts.UserRequestCounter
+  alias ExBanking.Accounts.UserRegistry
 
-  def check_out(user), do: :ets.update_counter(__MODULE__, user, {2, 1})
-
-  def check_in(user), do: :ets.update_counter(__MODULE__, user, {2, -1})
+  @maximum_user_request 10
 
   def manage_request(user, fun) do
-    if get_user_request_counter(user) < 10 do
-      check_out(user)
+    with true <- restrict_user_request(user) do
+      UserRequestCounter.check_out(user)
 
       try do
         fun.()
@@ -18,24 +14,60 @@ defmodule ExBanking.Accounts.UserRequestManager do
         e ->
           reraise e, __STACKTRACE__
       after
-        check_in(user)
+        UserRequestCounter.check_in(user)
       end
-    else
-      {:error, :too_many_requests_to_user}
     end
   end
 
-  defp get_user_request_counter(user) do
-    with [{_, counter}] <- :ets.lookup(__MODULE__, user) do
-      counter
+  def manage_request(user, currency, fun) do
+    with {:ok, user_pid} <- UserRegistry.lookup_user(user) do
+      manage_request(user, fn ->
+        fun.(user_pid, currency)
+      end)
     end
   end
 
-  defp create_user_request_manager_table do
-    with :undefined <- :ets.whereis(__MODULE__) do
-      :ets.new(__MODULE__, [:public, :named_table, read_concurrency: true])
+  def manage_request(user, amount, currency, fun) do
+    with {:ok, user_pid} <- UserRegistry.lookup_user(user) do
+      manage_request(user, fn ->
+        fun.(user_pid, amount, currency)
+      end)
     end
   end
 
-  defp insert_user(user), do: :ets.insert(__MODULE__, {user, 0})
+  def manage_request(from_user, to_user, amount, currency, fun) do
+    with {:ok, sender_pid} <- UserRegistry.lookup_user(from_user, :sender),
+         {:ok, receiver_pid} <- UserRegistry.lookup_user(to_user, :receiver),
+         true <- restrict_user_request(from_user, :sender),
+         true <- restrict_user_request(from_user, :receiver) do
+      UserRequestCounter.check_out(from_user)
+      UserRequestCounter.check_out(to_user)
+
+      try do
+        fun.(sender_pid, receiver_pid, amount, currency)
+      rescue
+        e ->
+          reraise e, __STACKTRACE__
+      after
+        UserRequestCounter.check_in(from_user)
+        UserRequestCounter.check_in(to_user)
+      end
+    end
+  end
+
+  def restrict_user_request(user, type \\ nil) do
+    user
+    |> UserRequestCounter.get_user_request_count()
+    |> restrict_user_request_count(type)
+  end
+
+  defp restrict_user_request_count(count, type) do
+    with false <- count < @maximum_user_request do
+      {:error, user_request_count_error(type)}
+    end
+  end
+
+  defp user_request_count_error(:sender), do: :too_many_requests_to_sender
+  defp user_request_count_error(:receiver), do: :too_many_requests_to_receiver
+  defp user_request_count_error(_), do: :too_many_requests_to_user
 end
