@@ -8,7 +8,7 @@
 import Config
 
 config :ex_banking,
-  user_request_delay: 0,
+  enable_user_request_delay: false,
   maximum_allowed_request: 10
 
 # Import environment specific config. This must remain at the bottom

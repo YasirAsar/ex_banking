@@ -1,5 +1,5 @@
 import Config
 
 config :ex_banking,
-  user_request_delay: 2000,
+  enable_user_request_delay: true,
   maximum_allowed_request: 2

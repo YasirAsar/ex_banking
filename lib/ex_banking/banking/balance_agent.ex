@@ -8,7 +8,7 @@ defmodule ExBanking.Banking.BalanceAgent do
   alias ExBanking.Accounts.UserRequestCounter
   alias ExBanking.Banking.BalanceState
 
-  @user_request_delay Application.compile_env!(:ex_banking, :user_request_delay)
+  @enable_user_request_delay Application.compile_env!(:ex_banking, :enable_user_request_delay)
 
   def start_link(user) do
     UserRequestCounter.initialize_user_request_counter(user)
@@ -16,7 +16,7 @@ defmodule ExBanking.Banking.BalanceAgent do
   end
 
   def get_balance(user, currency) do
-    Process.sleep(@user_request_delay)
+    enable_user_request_delay()
 
     Agent.get(user, fn state ->
       Enum.find_value(state, 0.0, fn object ->
@@ -26,7 +26,7 @@ defmodule ExBanking.Banking.BalanceAgent do
   end
 
   def deposit(user, amount, currency) do
-    Process.sleep(@user_request_delay)
+    enable_user_request_delay()
 
     Agent.get_and_update(user, fn state ->
       state
@@ -48,7 +48,7 @@ defmodule ExBanking.Banking.BalanceAgent do
   end
 
   def withdraw(user, amount, currency) do
-    Process.sleep(@user_request_delay)
+    enable_user_request_delay()
 
     Agent.get_and_update(user, fn state ->
       {[object], remaining_state} = Enum.split_with(state, &(&1.currency == currency))
@@ -64,4 +64,12 @@ defmodule ExBanking.Banking.BalanceAgent do
   defp set_precision(amount), do: Float.round(amount, 2)
 
   defp via_tuple(user), do: {:via, Registry, {ExBanking.Accounts.UserRegistry, user}}
+
+  defp enable_user_request_delay do
+    if @enable_user_request_delay do
+      Process.sleep(2000)
+    else
+      :ok
+    end
+  end
 end
