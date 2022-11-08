@@ -12,6 +12,9 @@ defmodule ExBankingTest do
   describe "create_user/1" do
     test "create user" do
       assert :ok = ExBanking.create_user(@user_1)
+
+      {:ok, pid} = UserRegistry.lookup_user(@user_1)
+      UserRegistry.delete_user(pid)
     end
   end
 
