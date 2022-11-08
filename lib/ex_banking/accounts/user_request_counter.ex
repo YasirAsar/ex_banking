@@ -1,4 +1,9 @@
 defmodule ExBanking.Accounts.UserRequestCounter do
+  @moduledoc """
+  This module functions to manage user request count.
+  Like creating user counter and updating.
+  """
+
   def initialize_user_request_counter(user) do
     create_user_request_counter_table()
     insert_user(user)

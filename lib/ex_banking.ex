@@ -1,7 +1,12 @@
 defmodule ExBanking do
-  alias ExBanking.ArgumentValidator
+  @moduledoc """
+  This is the main module for the project.
+  It has application main interface functions.
+  """
+
   alias ExBanking.Accounts.UserRegistry
   alias ExBanking.Accounts.UserRequestManager
+  alias ExBanking.ArgumentValidator
   alias ExBanking.Banking.Balance
 
   @spec create_user(user :: String.t()) :: :ok | {:error, :wrong_arguments | :user_already_exists}

@@ -7,14 +7,18 @@ defmodule ExBanking.Banking.BalanceAgent do
 
   alias ExBanking.Accounts.UserRequestCounter
   alias ExBanking.Banking.BalanceState
+  alias ExBanking.Types
 
   @enable_user_request_delay Application.compile_env!(:ex_banking, :enable_user_request_delay)
 
+  @spec start_link(Types.user()) ::
+          {:ok, Types.user_pid()} | {:error, {:already_started, Types.user_pid()} | term}
   def start_link(user) do
     UserRequestCounter.initialize_user_request_counter(user)
     Agent.start_link(fn -> [] end, name: via_tuple(user))
   end
 
+  @spec get_balance(Types.user_pid(), Types.currency()) :: Types.amount()
   def get_balance(user, currency) do
     enable_user_request_delay()
 
@@ -25,6 +29,7 @@ defmodule ExBanking.Banking.BalanceAgent do
     end)
   end
 
+  @spec deposit(Types.user_pid(), Types.amount(), Types.currency()) :: {:ok, Types.amount()}
   def deposit(user, amount, currency) do
     enable_user_request_delay()
 
@@ -47,6 +52,7 @@ defmodule ExBanking.Banking.BalanceAgent do
     end)
   end
 
+  @spec withdraw(Types.user_pid(), Types.amount(), Types.currency()) :: {:ok, Types.amount()}
   def withdraw(user, amount, currency) do
     enable_user_request_delay()
 
@@ -60,11 +66,14 @@ defmodule ExBanking.Banking.BalanceAgent do
     end)
   end
 
-  defp set_precision(amount) when is_integer(amount), do: amount
+  @spec set_precision(Types.amount()) :: float()
+  defp set_precision(amount) when is_integer(amount), do: amount + 0.0
   defp set_precision(amount), do: Float.round(amount, 2)
 
+  @spec via_tuple(Types.user()) :: tuple()
   defp via_tuple(user), do: {:via, Registry, {ExBanking.Accounts.UserRegistry, user}}
 
+  @spec enable_user_request_delay() :: :ok
   defp enable_user_request_delay do
     if @enable_user_request_delay do
       Process.sleep(2000)

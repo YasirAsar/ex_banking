@@ -1,6 +1,11 @@
 defmodule ExBanking.Accounts.UserRequestManager do
-  alias ExBanking.Accounts.UserRequestCounter
+  @moduledoc """
+  This module required functions to manage user request.
+  If the user request exceed allowed limit, returns error.
+  """
+
   alias ExBanking.Accounts.UserRegistry
+  alias ExBanking.Accounts.UserRequestCounter
 
   @maximum_allowed_request Application.compile_env!(:ex_banking, :maximum_allowed_request)
 
